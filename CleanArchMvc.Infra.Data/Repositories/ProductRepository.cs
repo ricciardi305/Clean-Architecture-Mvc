@@ -3,52 +3,45 @@ using CleanArchMvc.Domain.Interfaces;
 using CleanArchMvc.Infra.Data.Context;
 using Microsoft.EntityFrameworkCore;
 
-namespace CleanArchMvc.Infra.Data.Repositories
+namespace CleanArchMvc.Infra.Data.Repositories;
+
+public class ProductRepository : IProductRepository
 {
-    public class ProductRepository : IProductRepository
+    private ApplicationDbContext _productContext;
+    public ProductRepository(ApplicationDbContext context)
     {
-        ApplicationDbContext _productContext;
+        _productContext = context;
+    }
 
-        public ProductRepository(ApplicationDbContext context)
-        {
-            _productContext = context;
-        }
-        public async Task<Product> CreateAsync(Product product)
-        {
-            _productContext.Products.Add(product);
-            await _productContext.SaveChangesAsync();
-            return product;
-        }
+    public async Task<Product> CreateAsync(Product product)
+    {
+        _productContext.Add(product);
+        await _productContext.SaveChangesAsync();
+        return product;
+    }
 
-        public async Task<Product> GetProductByIdAsync(int? id)
-        {
-            return await _productContext.Products.FindAsync(id);
-        }
+    public async Task<Product> GetByIdAsync(int? id)
+    {
+        return await _productContext.Products.Include(c => c.Category)
+           .SingleOrDefaultAsync(p => p.Id == id);
+    }
 
-        public async Task<Product> GetProductCategoryAsync(int? id)
-        {
-            //eager load
-            return await _productContext.Products.Include(x => x.Category)
-                .SingleOrDefaultAsync(x => x.Id == id);
-        }
+    public async Task<IEnumerable<Product>> GetProductsAsync()
+    {
+        return await _productContext.Products.ToListAsync();
+    }
 
-        public async Task<IEnumerable<Product>> GetProductsAsync()
-        {
-            return await _productContext.Products.ToListAsync();
-        }
+    public async Task<Product> RemoveAsync(Product product)
+    {
+        _productContext.Remove(product);
+        await _productContext.SaveChangesAsync();
+        return product;
+    }
 
-        public async Task<Product> RemoveAsync(Product product)
-        {
-            _productContext.Products.Remove(product);
-            await _productContext.SaveChangesAsync();
-            return product;
-        }
-
-        public async Task<Product> UpdateAsync(Product product)
-        {
-            _productContext.Products.Update(product);
-            await _productContext.SaveChangesAsync();
-            return product;
-        }
+    public async Task<Product> UpdateAsync(Product product)
+    {
+        _productContext.Update(product);
+        await _productContext.SaveChangesAsync();
+        return product;
     }
 }
